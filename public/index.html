@@ -679,6 +679,9 @@
         let startX, startY, startCols, startRows;
         let currentBackgroundImage = null;
         let draggedBoxId = null;
+        let touchDraggedElement = null;
+        let touchStartTime = 0;
+        let isDragging = false;
 
         // Temperature to color conversion
         function tempToColor(temp) {
@@ -863,6 +866,69 @@
                     if (draggedBoxId && draggedBoxId !== box.id) {
                         reorderBoxes(draggedBoxId, box.id);
                     }
+                };
+
+                // Touch events for mobile drag
+                boxEl.ontouchstart = (e) => {
+                    if (e.target.closest('.resize-handle')) return;
+
+                    touchStartTime = Date.now();
+                    touchDraggedElement = e.currentTarget;
+                    isDragging = false;
+
+                    // Wait 300ms to distinguish between tap and drag
+                    setTimeout(() => {
+                        if (touchDraggedElement && !isDragging) {
+                            isDragging = true;
+                            touchDraggedElement.classList.add('dragging');
+                            draggedBoxId = box.id;
+                        }
+                    }, 300);
+                };
+
+                boxEl.ontouchmove = (e) => {
+                    if (!isDragging || !touchDraggedElement) return;
+
+                    e.preventDefault();
+                    const touch = e.touches[0];
+
+                    // Get element at touch position
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const boxBelow = elementBelow?.closest('.stress-box');
+
+                    // Clear previous highlights
+                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+                    // Highlight drop target
+                    if (boxBelow && boxBelow !== touchDraggedElement) {
+                        boxBelow.classList.add('drag-over');
+                    }
+                };
+
+                boxEl.ontouchend = (e) => {
+                    const touchDuration = Date.now() - touchStartTime;
+
+                    if (isDragging && touchDraggedElement) {
+                        // Complete the drag
+                        const touch = e.changedTouches[0];
+                        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                        const boxBelow = elementBelow?.closest('.stress-box');
+
+                        if (boxBelow && boxBelow !== touchDraggedElement) {
+                            const targetId = parseInt(boxBelow.dataset.boxId);
+                            reorderBoxes(draggedBoxId, targetId);
+                        }
+
+                        touchDraggedElement.classList.remove('dragging');
+                        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    } else if (touchDuration < 300 && !e.target.closest('.resize-handle')) {
+                        // Was a tap, open editor
+                        editBox(box.id);
+                    }
+
+                    touchDraggedElement = null;
+                    isDragging = false;
+                    draggedBoxId = null;
                 };
 
                 boxEl.onclick = (e) => {
