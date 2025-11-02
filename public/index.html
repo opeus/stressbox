@@ -871,9 +871,9 @@
                         <ul>
                             ${items.map(item => `<li>${item}</li>`).join('')}
                         </ul>
-                        <div class="temp-bar">
+                        ${hasImage ? `<div class="temp-bar">
                             <div class="temp-bar-fill" style="width: ${temperature}%; background: ${tempToColor(temperature)};"></div>
-                        </div>
+                        </div>` : ''}
                         <div class="resize-handle" onmousedown="startResize(event, ${box.id})" ontouchstart="startResize(event, ${box.id})">⋰</div>
                     `;
 
