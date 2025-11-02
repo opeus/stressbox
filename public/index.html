@@ -170,9 +170,6 @@
         }
 
         .stress-box-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             margin-bottom: 10px;
         }
 
@@ -180,35 +177,7 @@
             font-size: 1.1em;
             font-weight: 600;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            flex: 1;
             word-break: break-word;
-        }
-
-        .box-controls {
-            display: flex;
-            gap: 5px;
-            flex-shrink: 0;
-        }
-
-        .box-btn {
-            background: rgba(255,255,255,0.25);
-            backdrop-filter: blur(10px);
-            border: none;
-            color: white;
-            border-radius: 0;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-            flex-shrink: 0;
-        }
-
-        .box-btn:active {
-            background: rgba(255,255,255,0.4);
         }
 
         .stress-box ul {
@@ -838,9 +807,6 @@
                 boxEl.innerHTML = `
                     <div class="stress-box-header">
                         <h3>${box.heading}</h3>
-                        <div class="box-controls">
-                            <button class="box-btn" onclick="event.stopPropagation(); editBox(${box.id})">✏️</button>
-                        </div>
                     </div>
                     <ul>
                         ${box.items.map(item => `<li>${item}</li>`).join('')}
@@ -852,18 +818,13 @@
                 `;
 
                 boxEl.onclick = (e) => {
-                    if (!e.target.closest('.box-btn') && !e.target.closest('.resize-handle')) {
-                        quickTempAdjust(box.id);
+                    if (!e.target.closest('.resize-handle')) {
+                        editBox(box.id);
                     }
                 };
 
                 container.appendChild(boxEl);
             });
-        }
-
-        // Quick temperature adjustment
-        function quickTempAdjust(id) {
-            editBox(id);
         }
 
         // Resize functionality
