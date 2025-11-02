@@ -843,9 +843,14 @@
                 boxEl.dataset.boxId = box.id;
                 boxEl.draggable = false; // Only drag handle is draggable
 
+                // Add colored border for photo boxes
+                if (hasImage) {
+                    boxEl.style.border = `4px solid ${tempToColor(box.temperature)}`;
+                }
+
                 boxEl.innerHTML = `
                     <div class="stress-box-header">
-                        <div class="drag-handle" data-drag-handle draggable="true">☰</div>
+                        <div class="drag-handle" data-drag-handle draggable="true">⠿</div>
                         <h3>${box.heading}</h3>
                     </div>
                     <ul>
