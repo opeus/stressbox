@@ -2,12 +2,14 @@ const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data.json');
 
-// Simple in-memory data storage
-let stressBoxes = [
+// Default initial data
+const defaultBoxes = [
   {
     id: 1,
     heading: 'Work Projects',
@@ -45,6 +47,37 @@ let stressBoxes = [
     backgroundImage: ''
   }
 ];
+
+// Load data from file or use defaults
+let stressBoxes = [];
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      stressBoxes = JSON.parse(data);
+      console.log('Loaded existing data from file');
+    } else {
+      stressBoxes = [...defaultBoxes];
+      saveData();
+      console.log('Created new data file with defaults');
+    }
+  } catch (error) {
+    console.error('Error loading data, using defaults:', error);
+    stressBoxes = [...defaultBoxes];
+  }
+}
+
+// Save data to file
+function saveData() {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(stressBoxes, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
+}
+
+// Load data on startup
+loadData();
 
 // Middleware
 app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for base64 images
@@ -107,6 +140,7 @@ app.post('/api/boxes', requireAuth, (req, res) => {
     backgroundImage: req.body.backgroundImage || ''
   };
   stressBoxes.push(newBox);
+  saveData();
   res.json(newBox);
 });
 
@@ -121,6 +155,7 @@ app.put('/api/boxes/:id', requireAuth, (req, res) => {
       ...req.body,
       id // Preserve the ID
     };
+    saveData();
     res.json(stressBoxes[boxIndex]);
   } else {
     res.status(404).json({ error: 'Box not found' });
@@ -131,6 +166,7 @@ app.put('/api/boxes/:id', requireAuth, (req, res) => {
 app.delete('/api/boxes/:id', requireAuth, (req, res) => {
   const id = parseInt(req.params.id);
   stressBoxes = stressBoxes.filter(b => b.id !== id);
+  saveData();
   res.json({ success: true });
 });
 

@@ -4,12 +4,15 @@ A simple web app to help manage stress by organizing thoughts into visual boxes 
 
 ## Features
 
-- 🎨 Visual treemap layout for organizing stress items
+- 🎨 Mobile-first responsive grid layout for organizing stress items
 - 🌡️ Temperature rating system (green = calm, yellow = moderate, red = high stress)
 - 📝 Each box contains a heading and a simple list of items
+- 📷 Optional photo backgrounds for each box with smart gradient overlay
+- ↔️↕️ 2D resizable boxes (drag handle to resize width and height)
 - 🔐 Simple password protection (password: `dandan`)
-- 💾 In-memory data storage (data resets on server restart)
-- 📱 Responsive design
+- 💾 File-based data persistence (survives server restarts and code updates)
+- 📱 Touch-optimized mobile interface with bottom navigation
+- 🎨 Color-coded temperature bar visible on all boxes
 
 ## Local Development
 
@@ -53,6 +56,8 @@ npm start
 
 ## Notes
 
-- Data is stored in memory and will be lost when the server restarts
-- For production use, consider adding a database (MongoDB, PostgreSQL, etc.)
+- Data is saved to `data.json` file and persists across server restarts
+- Photos are stored as base64 strings in the JSON file (no separate database needed)
+- For production with multiple instances, consider using a database (MongoDB, PostgreSQL, etc.)
 - The password is hardcoded for simplicity - for real use, implement proper authentication
+- The `data.json` file is excluded from git (in `.gitignore`) to keep your personal data private
