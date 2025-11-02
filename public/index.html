@@ -1081,7 +1081,8 @@
                 box.gridCols = newCols;
                 box.gridRows = newRows;
                 const boxEl = document.querySelector(`[data-box-id="${resizingBox}"]`);
-                boxEl.className = `stress-box col-${newCols} row-${newRows} resizing`;
+                const hasImage = box.backgroundImage && box.backgroundImage.length > 0;
+                boxEl.className = `stress-box col-${newCols} row-${newRows} ${hasImage ? '' : 'no-image'} resizing`;
             }
         }
 
