@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
@@ -83,10 +84,19 @@ loadData();
 app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for base64 images
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(session({
+  store: new FileStore({
+    path: path.join(__dirname, 'sessions'),
+    retries: 0,
+    ttl: 86400 // 24 hours in seconds
+  }),
   secret: 'stress-box-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: false // Set to true if using HTTPS in production
+  }
 }));
 
 // Serve static files
