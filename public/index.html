@@ -808,10 +808,17 @@
         async function loadBoxes() {
             try {
                 const response = await fetch('/api/boxes');
-                boxes = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                boxes = Array.isArray(data) ? data : [];
+                console.log('Loaded boxes:', boxes);
                 renderBoxes();
             } catch (error) {
                 console.error('Error loading boxes:', error);
+                boxes = [];
+                renderBoxes();
             }
         }
 
@@ -827,42 +834,46 @@
             container.innerHTML = '';
 
             boxes.forEach(box => {
-                const cols = box.gridCols || 1;
-                const rows = box.gridRows || 1;
+                try {
+                    const cols = box.gridCols || 1;
+                    const rows = box.gridRows || 1;
+                    const items = box.items || [];
+                    const temperature = box.temperature || 50;
+                    const heading = box.heading || 'Untitled';
 
-                const boxEl = document.createElement('div');
-                const hasImage = box.backgroundImage && box.backgroundImage.length > 0;
-                boxEl.className = `stress-box col-${cols} row-${rows} ${hasImage ? '' : 'no-image'}`;
+                    const boxEl = document.createElement('div');
+                    const hasImage = box.backgroundImage && box.backgroundImage.length > 0;
+                    boxEl.className = `stress-box col-${cols} row-${rows} ${hasImage ? '' : 'no-image'}`;
 
-                // Clear any previous styles
-                boxEl.style.backgroundImage = '';
-                boxEl.style.backgroundColor = '';
-                boxEl.style.border = '';
+                    // Clear any previous styles
+                    boxEl.style.backgroundImage = '';
+                    boxEl.style.backgroundColor = '';
+                    boxEl.style.border = '';
 
-                if (hasImage) {
-                    boxEl.style.backgroundImage = `url(${box.backgroundImage})`;
-                    boxEl.style.border = `4px solid ${tempToColor(box.temperature)}`;
-                } else {
-                    boxEl.style.backgroundColor = tempToColor(box.temperature);
-                    boxEl.style.border = '2px solid rgba(0,0,0,0.1)';
-                }
+                    if (hasImage) {
+                        boxEl.style.backgroundImage = `url(${box.backgroundImage})`;
+                        boxEl.style.border = `4px solid ${tempToColor(temperature)}`;
+                    } else {
+                        boxEl.style.backgroundColor = tempToColor(temperature);
+                        boxEl.style.border = '2px solid rgba(0,0,0,0.1)';
+                    }
 
-                boxEl.dataset.boxId = box.id;
-                boxEl.draggable = false; // Only drag handle is draggable
+                    boxEl.dataset.boxId = box.id;
+                    boxEl.draggable = false; // Only drag handle is draggable
 
-                boxEl.innerHTML = `
-                    <div class="stress-box-header">
-                        <div class="drag-handle" data-drag-handle draggable="true">⠿</div>
-                        <h3>${box.heading}</h3>
-                    </div>
-                    <ul>
-                        ${box.items.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                    <div class="temp-bar">
-                        <div class="temp-bar-fill" style="width: ${box.temperature}%; background: ${tempToColor(box.temperature)};"></div>
-                    </div>
-                    <div class="resize-handle" onmousedown="startResize(event, ${box.id})" ontouchstart="startResize(event, ${box.id})">⋰</div>
-                `;
+                    boxEl.innerHTML = `
+                        <div class="stress-box-header">
+                            <div class="drag-handle" data-drag-handle draggable="true">⠿</div>
+                            <h3>${heading}</h3>
+                        </div>
+                        <ul>
+                            ${items.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                        <div class="temp-bar">
+                            <div class="temp-bar-fill" style="width: ${temperature}%; background: ${tempToColor(temperature)};"></div>
+                        </div>
+                        <div class="resize-handle" onmousedown="startResize(event, ${box.id})" ontouchstart="startResize(event, ${box.id})">⋰</div>
+                    `;
 
                 // Make drag handle trigger drag for the parent box
                 const dragHandle = boxEl.querySelector('[data-drag-handle]');
@@ -958,6 +969,9 @@
                 };
 
                 container.appendChild(boxEl);
+                } catch (error) {
+                    console.error('Error rendering box:', box, error);
+                }
             });
         }
 
