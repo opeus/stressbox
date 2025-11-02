@@ -234,19 +234,21 @@
 
         /* Temperature Bar */
         .temp-bar {
-            height: 4px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 2px;
+            height: 6px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 3px;
             margin-top: 10px;
             overflow: visible;
             position: relative;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
         }
 
         .temp-bar-fill {
             height: 100%;
-            border-radius: 2px;
+            border-radius: 3px;
             transition: width 0.3s;
             position: relative;
+            box-shadow: 0 0 8px rgba(0,0,0,0.4), 0 0 4px currentColor;
         }
 
         /* Resize Handle */
@@ -823,7 +825,7 @@
                         ${box.items.map(item => `<li>${item}</li>`).join('')}
                     </ul>
                     <div class="temp-bar">
-                        <div class="temp-bar-fill" style="width: ${box.temperature}%; background: rgba(255,255,255,0.4);"></div>
+                        <div class="temp-bar-fill" style="width: ${box.temperature}%; background: ${tempToColor(box.temperature)};"></div>
                     </div>
                     <div class="resize-handle" onmousedown="startResize(event, ${box.id})" ontouchstart="startResize(event, ${box.id})">⋰</div>
                 `;
