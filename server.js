@@ -14,7 +14,8 @@ let stressBoxes = [
     items: ['Finish report', 'Team meeting prep', 'Update documentation'],
     temperature: 65,
     gridCols: 2,
-    gridRows: 2
+    gridRows: 2,
+    backgroundImage: ''
   },
   {
     id: 2,
@@ -22,7 +23,8 @@ let stressBoxes = [
     items: ['Grocery shopping', 'Call mom', 'Exercise'],
     temperature: 30,
     gridCols: 1,
-    gridRows: 1
+    gridRows: 1,
+    backgroundImage: ''
   },
   {
     id: 3,
@@ -30,7 +32,8 @@ let stressBoxes = [
     items: ['Fix leak', 'Clean garage'],
     temperature: 85,
     gridCols: 2,
-    gridRows: 1
+    gridRows: 1,
+    backgroundImage: ''
   },
   {
     id: 4,
@@ -38,13 +41,14 @@ let stressBoxes = [
     items: ['Doctor appointment', 'Gym routine', 'Meal prep'],
     temperature: 45,
     gridCols: 1,
-    gridRows: 2
+    gridRows: 2,
+    backgroundImage: ''
   }
 ];
 
 // Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for base64 images
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(session({
   secret: 'stress-box-secret-key',
   resave: false,
@@ -99,7 +103,8 @@ app.post('/api/boxes', requireAuth, (req, res) => {
     items: req.body.items || [],
     temperature: req.body.temperature || 50,
     gridCols: req.body.gridCols || 1,
-    gridRows: req.body.gridRows || 1
+    gridRows: req.body.gridRows || 1,
+    backgroundImage: req.body.backgroundImage || ''
   };
   stressBoxes.push(newBox);
   res.json(newBox);

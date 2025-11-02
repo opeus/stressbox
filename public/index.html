@@ -124,7 +124,7 @@
             padding: 15px;
             color: white;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             min-height: 150px;
@@ -132,6 +132,32 @@
             transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
             user-select: none;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .stress-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom,
+                rgba(0,0,0,0.7) 0%,
+                rgba(0,0,0,0.5) 40%,
+                rgba(0,0,0,0.3) 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .stress-box.no-image::before {
+            display: none;
+        }
+
+        .stress-box > * {
+            position: relative;
+            z-index: 1;
         }
 
         .stress-box.resizing {
@@ -449,6 +475,77 @@
             margin-top: 5px;
         }
 
+        /* Photo Upload */
+        .photo-upload-container {
+            margin-bottom: 20px;
+        }
+
+        .photo-upload-btn {
+            width: 100%;
+            padding: 15px;
+            background: rgba(102,126,234,0.2);
+            border: 2px dashed rgba(102,126,234,0.5);
+            border-radius: 12px;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .photo-upload-btn:active {
+            transform: scale(0.98);
+        }
+
+        #photo-input {
+            display: none;
+        }
+
+        .photo-preview-container {
+            margin-top: 10px;
+            position: relative;
+            display: none;
+        }
+
+        .photo-preview-container.active {
+            display: block;
+        }
+
+        .photo-preview {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .remove-photo-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(231,76,60,0.9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .remove-photo-btn:active {
+            background: rgba(192,57,43,0.9);
+        }
+
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -542,6 +639,19 @@
                 <textarea id="box-items" placeholder="One item per line:&#10;&#10;Finish report&#10;Team meeting&#10;Email client"></textarea>
             </div>
 
+            <div class="photo-upload-container">
+                <label>Background Photo (Optional)</label>
+                <input type="file" id="photo-input" accept="image/*" onchange="handlePhotoUpload(event)" />
+                <button type="button" class="photo-upload-btn" onclick="document.getElementById('photo-input').click()">
+                    📷 Choose Photo
+                </button>
+                <div id="photo-preview-container" class="photo-preview-container">
+                    <img id="photo-preview" class="photo-preview" src="" alt="Preview" />
+                    <button type="button" class="remove-photo-btn" onclick="removePhoto()">×</button>
+                </div>
+                <div class="help-text">Add a photo background to personalize your box</div>
+            </div>
+
             <div class="slider-group">
                 <label>Stress Temperature</label>
                 <div class="temperature-display">
@@ -564,6 +674,7 @@
         let currentEditingId = null;
         let resizingBox = null;
         let startX, startY, startCols, startRows;
+        let currentBackgroundImage = null;
 
         // Temperature to color conversion
         function tempToColor(temp) {
@@ -591,6 +702,37 @@
                 label.textContent = 'Stressed 😰';
                 label.style.color = '#e74c3c';
             }
+        }
+
+        // Photo upload handling
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentBackgroundImage = e.target.result;
+                const preview = document.getElementById('photo-preview');
+                const container = document.getElementById('photo-preview-container');
+                preview.src = e.target.result;
+                container.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePhoto() {
+            currentBackgroundImage = null;
+            const preview = document.getElementById('photo-preview');
+            const container = document.getElementById('photo-preview-container');
+            const input = document.getElementById('photo-input');
+            preview.src = '';
+            container.classList.remove('active');
+            input.value = '';
         }
 
         // Login
@@ -658,8 +800,15 @@
                 const rows = box.gridRows || 1;
 
                 const boxEl = document.createElement('div');
-                boxEl.className = `stress-box col-${cols} row-${rows}`;
-                boxEl.style.backgroundColor = tempToColor(box.temperature);
+                const hasImage = box.backgroundImage && box.backgroundImage.length > 0;
+                boxEl.className = `stress-box col-${cols} row-${rows} ${hasImage ? '' : 'no-image'}`;
+
+                if (hasImage) {
+                    boxEl.style.backgroundImage = `url(${box.backgroundImage})`;
+                } else {
+                    boxEl.style.backgroundColor = tempToColor(box.temperature);
+                }
+
                 boxEl.dataset.boxId = box.id;
 
                 boxEl.innerHTML = `
@@ -769,11 +918,13 @@
         // Modal functions
         function showAddBoxModal() {
             currentEditingId = null;
+            currentBackgroundImage = null;
             document.getElementById('modal-title').textContent = 'Add New Box';
             document.getElementById('box-heading').value = '';
             document.getElementById('box-items').value = '';
             document.getElementById('temperature-slider').value = 50;
             updateTemperatureLabel();
+            removePhoto();
             document.getElementById('box-modal').classList.add('active');
         }
 
@@ -782,11 +933,24 @@
             if (!box) return;
 
             currentEditingId = id;
+            currentBackgroundImage = box.backgroundImage || null;
+
             document.getElementById('modal-title').textContent = 'Edit Box';
             document.getElementById('box-heading').value = box.heading;
             document.getElementById('box-items').value = box.items.join('\n');
             document.getElementById('temperature-slider').value = box.temperature;
             updateTemperatureLabel();
+
+            // Show existing photo if present
+            if (box.backgroundImage) {
+                const preview = document.getElementById('photo-preview');
+                const container = document.getElementById('photo-preview-container');
+                preview.src = box.backgroundImage;
+                container.classList.add('active');
+            } else {
+                removePhoto();
+            }
+
             document.getElementById('box-modal').classList.add('active');
         }
 
@@ -816,7 +980,8 @@
                 items,
                 temperature,
                 gridCols: currentEditingId ? (boxes.find(b => b.id === currentEditingId).gridCols || 1) : 1,
-                gridRows: currentEditingId ? (boxes.find(b => b.id === currentEditingId).gridRows || 1) : 1
+                gridRows: currentEditingId ? (boxes.find(b => b.id === currentEditingId).gridRows || 1) : 1,
+                backgroundImage: currentBackgroundImage || ''
             };
 
             try {
