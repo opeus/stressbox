@@ -181,6 +181,29 @@
 
         .stress-box-header {
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .drag-handle {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(10px);
+            border: none;
+            color: white;
+            cursor: move;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .drag-handle:active {
+            background: rgba(255,255,255,0.4);
         }
 
         .stress-box h3 {
@@ -188,6 +211,7 @@
             font-weight: 600;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             word-break: break-word;
+            flex: 1;
         }
 
         .stress-box ul {
@@ -817,10 +841,11 @@
                 }
 
                 boxEl.dataset.boxId = box.id;
-                boxEl.draggable = true;
+                boxEl.draggable = false; // Only drag handle is draggable
 
                 boxEl.innerHTML = `
                     <div class="stress-box-header">
+                        <div class="drag-handle" data-drag-handle draggable="true">☰</div>
                         <h3>${box.heading}</h3>
                     </div>
                     <ul>
@@ -832,19 +857,17 @@
                     <div class="resize-handle" onmousedown="startResize(event, ${box.id})" ontouchstart="startResize(event, ${box.id})">⋰</div>
                 `;
 
-                // Drag events
-                boxEl.ondragstart = (e) => {
-                    if (e.target.closest('.resize-handle')) {
-                        e.preventDefault();
-                        return;
-                    }
+                // Make drag handle trigger drag for the parent box
+                const dragHandle = boxEl.querySelector('[data-drag-handle]');
+                dragHandle.ondragstart = (e) => {
+                    e.stopPropagation();
                     draggedBoxId = box.id;
-                    e.target.classList.add('dragging');
+                    boxEl.classList.add('dragging');
                     e.dataTransfer.effectAllowed = 'move';
                 };
 
-                boxEl.ondragend = (e) => {
-                    e.target.classList.remove('dragging');
+                dragHandle.ondragend = (e) => {
+                    boxEl.classList.remove('dragging');
                     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
                 };
 
@@ -868,28 +891,22 @@
                     }
                 };
 
-                // Touch events for mobile drag
-                boxEl.ontouchstart = (e) => {
-                    if (e.target.closest('.resize-handle')) return;
-
+                // Touch events for mobile drag - directly on drag handle
+                dragHandle.ontouchstart = (e) => {
+                    e.preventDefault(); // Prevent scrolling when dragging
+                    e.stopPropagation();
                     touchStartTime = Date.now();
-                    touchDraggedElement = e.currentTarget;
-                    isDragging = false;
-
-                    // Wait 300ms to distinguish between tap and drag
-                    setTimeout(() => {
-                        if (touchDraggedElement && !isDragging) {
-                            isDragging = true;
-                            touchDraggedElement.classList.add('dragging');
-                            draggedBoxId = box.id;
-                        }
-                    }, 300);
+                    touchDraggedElement = boxEl;
+                    isDragging = true;
+                    touchDraggedElement.classList.add('dragging');
+                    draggedBoxId = box.id;
                 };
 
-                boxEl.ontouchmove = (e) => {
+                dragHandle.ontouchmove = (e) => {
                     if (!isDragging || !touchDraggedElement) return;
 
                     e.preventDefault();
+                    e.stopPropagation();
                     const touch = e.touches[0];
 
                     // Get element at touch position
@@ -905,10 +922,9 @@
                     }
                 };
 
-                boxEl.ontouchend = (e) => {
-                    const touchDuration = Date.now() - touchStartTime;
-
+                dragHandle.ontouchend = (e) => {
                     if (isDragging && touchDraggedElement) {
+                        e.stopPropagation();
                         // Complete the drag
                         const touch = e.changedTouches[0];
                         const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -921,18 +937,15 @@
 
                         touchDraggedElement.classList.remove('dragging');
                         document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-                    } else if (touchDuration < 300 && !e.target.closest('.resize-handle')) {
-                        // Was a tap, open editor
-                        editBox(box.id);
-                    }
 
-                    touchDraggedElement = null;
-                    isDragging = false;
-                    draggedBoxId = null;
+                        touchDraggedElement = null;
+                        isDragging = false;
+                        draggedBoxId = null;
+                    }
                 };
 
                 boxEl.onclick = (e) => {
-                    if (!e.target.closest('.resize-handle')) {
+                    if (!e.target.closest('.resize-handle') && !e.target.closest('[data-drag-handle]')) {
                         editBox(box.id);
                     }
                 };
