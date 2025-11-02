@@ -461,29 +461,41 @@
             margin-bottom: 10px;
         }
 
-        /* Grid Sizes */
-        .size-1 { grid-column: span 1; }
-        .size-2 { grid-column: span 2; }
-        .size-3 { grid-column: span 3; }
-        .size-4 { grid-column: span 4; }
+        /* Grid Sizes - Columns */
+        .col-1 { grid-column: span 1; }
+        .col-2 { grid-column: span 2; }
+        .col-3 { grid-column: span 3; }
+        .col-4 { grid-column: span 4; }
+        .col-5 { grid-column: span 5; }
+        .col-6 { grid-column: span 6; }
+
+        /* Grid Sizes - Rows */
+        .row-1 { grid-row: span 1; }
+        .row-2 { grid-row: span 2; }
+        .row-3 { grid-row: span 3; }
+        .row-4 { grid-row: span 4; }
 
         /* Responsive */
         @media (max-width: 600px) {
             #boxes-grid {
                 grid-template-columns: repeat(2, 1fr);
+                grid-auto-rows: 150px;
             }
-            .size-3, .size-4 { grid-column: span 2; }
+            .col-3, .col-4, .col-5, .col-6 { grid-column: span 2; }
         }
 
         @media (min-width: 601px) {
             #boxes-grid {
                 grid-template-columns: repeat(4, 1fr);
+                grid-auto-rows: 150px;
             }
+            .col-5, .col-6 { grid-column: span 4; }
         }
 
         @media (min-width: 900px) {
             #boxes-grid {
                 grid-template-columns: repeat(6, 1fr);
+                grid-auto-rows: 150px;
             }
         }
     </style>
@@ -551,7 +563,7 @@
         let boxes = [];
         let currentEditingId = null;
         let resizingBox = null;
-        let startX, startSize;
+        let startX, startY, startCols, startRows;
 
         // Temperature to color conversion
         function tempToColor(temp) {
@@ -642,8 +654,11 @@
             container.innerHTML = '';
 
             boxes.forEach(box => {
+                const cols = box.gridCols || 1;
+                const rows = box.gridRows || 1;
+
                 const boxEl = document.createElement('div');
-                boxEl.className = `stress-box size-${box.gridSize || 1}`;
+                boxEl.className = `stress-box col-${cols} row-${rows}`;
                 boxEl.style.backgroundColor = tempToColor(box.temperature);
                 boxEl.dataset.boxId = box.id;
 
@@ -686,12 +701,14 @@
 
             resizingBox = boxId;
             const box = boxes.find(b => b.id === boxId);
-            startSize = box.gridSize || 1;
+            startCols = box.gridCols || 1;
+            startRows = box.gridRows || 1;
 
             const boxEl = document.querySelector(`[data-box-id="${boxId}"]`);
             boxEl.classList.add('resizing');
 
             startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
 
             document.addEventListener('mousemove', handleResize);
             document.addEventListener('mouseup', endResize);
@@ -703,17 +720,24 @@
             if (!resizingBox) return;
 
             const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-            const diff = currentX - startX;
-            const threshold = 80; // pixels to drag for size change
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
-            let newSize = startSize + Math.floor(diff / threshold);
-            newSize = Math.max(1, Math.min(4, newSize)); // Clamp between 1-4
+            const diffX = currentX - startX;
+            const diffY = currentY - startY;
+            const threshold = 60; // pixels to drag for size change
+
+            let newCols = startCols + Math.floor(diffX / threshold);
+            let newRows = startRows + Math.floor(diffY / threshold);
+
+            newCols = Math.max(1, Math.min(6, newCols)); // Clamp between 1-6
+            newRows = Math.max(1, Math.min(4, newRows)); // Clamp between 1-4
 
             const box = boxes.find(b => b.id === resizingBox);
-            if (box && box.gridSize !== newSize) {
-                box.gridSize = newSize;
+            if (box && (box.gridCols !== newCols || box.gridRows !== newRows)) {
+                box.gridCols = newCols;
+                box.gridRows = newRows;
                 const boxEl = document.querySelector(`[data-box-id="${resizingBox}"]`);
-                boxEl.className = `stress-box size-${newSize} resizing`;
+                boxEl.className = `stress-box col-${newCols} row-${newRows} resizing`;
             }
         }
 
@@ -791,7 +815,8 @@
                 heading,
                 items,
                 temperature,
-                gridSize: currentEditingId ? boxes.find(b => b.id === currentEditingId).gridSize || 1 : 1
+                gridCols: currentEditingId ? (boxes.find(b => b.id === currentEditingId).gridCols || 1) : 1,
+                gridRows: currentEditingId ? (boxes.find(b => b.id === currentEditingId).gridRows || 1) : 1
             };
 
             try {

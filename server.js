@@ -13,21 +13,32 @@ let stressBoxes = [
     heading: 'Work Projects',
     items: ['Finish report', 'Team meeting prep', 'Update documentation'],
     temperature: 65,
-    gridSize: 2
+    gridCols: 2,
+    gridRows: 2
   },
   {
     id: 2,
     heading: 'Personal',
     items: ['Grocery shopping', 'Call mom', 'Exercise'],
     temperature: 30,
-    gridSize: 1
+    gridCols: 1,
+    gridRows: 1
   },
   {
     id: 3,
     heading: 'House',
     items: ['Fix leak', 'Clean garage'],
     temperature: 85,
-    gridSize: 1
+    gridCols: 2,
+    gridRows: 1
+  },
+  {
+    id: 4,
+    heading: 'Health',
+    items: ['Doctor appointment', 'Gym routine', 'Meal prep'],
+    temperature: 45,
+    gridCols: 1,
+    gridRows: 2
   }
 ];
 
@@ -87,7 +98,8 @@ app.post('/api/boxes', requireAuth, (req, res) => {
     heading: req.body.heading || 'New Box',
     items: req.body.items || [],
     temperature: req.body.temperature || 50,
-    gridSize: req.body.gridSize || 1
+    gridCols: req.body.gridCols || 1,
+    gridRows: req.body.gridRows || 1
   };
   stressBoxes.push(newBox);
   res.json(newBox);
