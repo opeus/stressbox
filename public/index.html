@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Box - Manage Your Mind</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Login Form */
+        #login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .login-box h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-box button:hover {
+            background: #5568d3;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        /* Main App */
+        #app-screen {
+            display: none;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+
+        .controls button:hover {
+            background: #5568d3;
+        }
+
+        .controls button.logout-btn {
+            background: #e74c3c;
+            float: right;
+        }
+
+        .controls button.logout-btn:hover {
+            background: #c0392b;
+        }
+
+        /* Treemap Container */
+        #treemap {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            min-height: 600px;
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Stress Box */
+        .stress-box {
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stress-box:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .stress-box h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .stress-box ul {
+            list-style: none;
+            font-size: 0.9em;
+            opacity: 0.95;
+            flex-grow: 1;
+        }
+
+        .stress-box ul li {
+            padding: 3px 0;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .stress-box ul li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+        }
+
+        .delete-box-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .delete-box-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .temperature-display {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 30px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #27ae60, #f39c12, #e74c3c);
+            border-radius: 15px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .size-slider {
+            margin-bottom: 20px;
+        }
+
+        .size-slider input[type="range"] {
+            background: linear-gradient(to right, #3498db, #9b59b6);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .help-text {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧘 Stress Box</h1>
+            <p class="subtitle">Organize the things on your mind</p>
+        </header>
+
+        <!-- Login Screen -->
+        <div id="login-screen">
+            <div class="login-box">
+                <h2>Welcome</h2>
+                <input type="password" id="password-input" placeholder="Enter password" />
+                <button onclick="login()">Login</button>
+                <div id="login-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Main App Screen -->
+        <div id="app-screen">
+            <div class="controls">
+                <button onclick="showAddBoxModal()">+ Add New Box</button>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+
+            <div id="treemap"></div>
+        </div>
+
+        <!-- Edit/Add Box Modal -->
+        <div id="box-modal" class="modal">
+            <div class="modal-content">
+                <h2 id="modal-title">Add New Box</h2>
+
+                <div class="form-group">
+                    <label>Box Heading</label>
+                    <input type="text" id="box-heading" placeholder="e.g., Work Projects" />
+                </div>
+
+                <div class="form-group">
+                    <label>List Items</label>
+                    <textarea id="box-items" placeholder="Enter each item on a new line&#10;e.g.,&#10;Finish report&#10;Team meeting&#10;Email client"></textarea>
+                    <div class="help-text">Enter one item per line</div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Stress Temperature</label>
+                    <div class="temperature-display">
+                        <span id="temperature-label">Medium stress</span>
+                    </div>
+                    <input type="range" id="temperature-slider" min="0" max="100" value="50"
+                           oninput="updateTemperatureLabel()" />
+                    <div class="help-text">Green = calm, Yellow = moderate, Red = high stress</div>
+                </div>
+
+                <div class="size-slider">
+                    <label>Box Size</label>
+                    <div class="temperature-display">
+                        <span id="size-label">Medium</span>
+                    </div>
+                    <input type="range" id="size-slider" min="10" max="50" value="20"
+                           oninput="updateSizeLabel()" />
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn-primary" onclick="saveBox()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let boxes = [];
+        let currentEditingId = null;
+
+        // Temperature to color conversion
+        function tempToColor(temp) {
+            // 0-100: green to yellow to red
+            if (temp < 50) {
+                // Green to Yellow
+                const r = Math.floor((temp / 50) * 255);
+                const g = 200;
+                return `rgb(${r}, ${g}, 100)`;
+            } else {
+                // Yellow to Red
+                const g = Math.floor((1 - (temp - 50) / 50) * 200);
+                return `rgb(255, ${g}, 100)`;
+            }
+        }
+
+        function updateTemperatureLabel() {
+            const temp = document.getElementById('temperature-slider').value;
+            const label = document.getElementById('temperature-label');
+
+            if (temp < 33) {
+                label.textContent = 'Low stress (calm)';
+                label.style.color = '#27ae60';
+            } else if (temp < 67) {
+                label.textContent = 'Medium stress';
+                label.style.color = '#f39c12';
+            } else {
+                label.textContent = 'High stress';
+                label.style.color = '#e74c3c';
+            }
+        }
+
+        function updateSizeLabel() {
+            const size = document.getElementById('size-slider').value;
+            const label = document.getElementById('size-label');
+
+            if (size < 20) {
+                label.textContent = 'Small';
+            } else if (size < 35) {
+                label.textContent = 'Medium';
+            } else {
+                label.textContent = 'Large';
+            }
+        }
+
+        // Login
+        async function login() {
+            const password = document.getElementById('password-input').value;
+            const errorDiv = document.getElementById('login-error');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                if (response.ok) {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-screen').style.display = 'block';
+                    loadBoxes();
+                } else {
+                    errorDiv.textContent = 'Invalid password';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Error connecting to server';
+            }
+        }
+
+        // Allow Enter key to login
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('password-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') login();
+            });
+        });
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            location.reload();
+        }
+
+        // Load boxes from server
+        async function loadBoxes() {
+            try {
+                const response = await fetch('/api/boxes');
+                boxes = await response.json();
+                renderTreemap();
+            } catch (error) {
+                console.error('Error loading boxes:', error);
+            }
+        }
+
+        // Render treemap
+        function renderTreemap() {
+            const container = document.getElementById('treemap');
+            container.innerHTML = '';
+
+            boxes.forEach(box => {
+                const boxEl = document.createElement('div');
+                boxEl.className = 'stress-box';
+                boxEl.style.backgroundColor = tempToColor(box.temperature);
+                boxEl.style.flexBasis = `${box.size}%`;
+                boxEl.style.minHeight = '200px';
+
+                boxEl.innerHTML = `
+                    <button class="delete-box-btn" onclick="deleteBox(${box.id}, event)">×</button>
+                    <h3>${box.heading}</h3>
+                    <ul>
+                        ${box.items.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                `;
+
+                boxEl.onclick = (e) => {
+                    if (!e.target.classList.contains('delete-box-btn')) {
+                        editBox(box.id);
+                    }
+                };
+
+                container.appendChild(boxEl);
+            });
+        }
+
+        // Show add box modal
+        function showAddBoxModal() {
+            currentEditingId = null;
+            document.getElementById('modal-title').textContent = 'Add New Box';
+            document.getElementById('box-heading').value = '';
+            document.getElementById('box-items').value = '';
+            document.getElementById('temperature-slider').value = 50;
+            document.getElementById('size-slider').value = 20;
+            updateTemperatureLabel();
+            updateSizeLabel();
+            document.getElementById('box-modal').classList.add('active');
+        }
+
+        // Edit box
+        function editBox(id) {
+            const box = boxes.find(b => b.id === id);
+            if (!box) return;
+
+            currentEditingId = id;
+            document.getElementById('modal-title').textContent = 'Edit Box';
+            document.getElementById('box-heading').value = box.heading;
+            document.getElementById('box-items').value = box.items.join('\n');
+            document.getElementById('temperature-slider').value = box.temperature;
+            document.getElementById('size-slider').value = box.size;
+            updateTemperatureLabel();
+            updateSizeLabel();
+            document.getElementById('box-modal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('box-modal').classList.remove('active');
+        }
+
+        // Save box
+        async function saveBox() {
+            const heading = document.getElementById('box-heading').value.trim();
+            const itemsText = document.getElementById('box-items').value.trim();
+            const items = itemsText.split('\n').filter(item => item.trim()).map(item => item.trim());
+            const temperature = parseInt(document.getElementById('temperature-slider').value);
+            const size = parseInt(document.getElementById('size-slider').value);
+
+            if (!heading) {
+                alert('Please enter a heading');
+                return;
+            }
+
+            const boxData = { heading, items, temperature, size };
+
+            try {
+                if (currentEditingId) {
+                    // Update existing box
+                    await fetch(`/api/boxes/${currentEditingId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(boxData)
+                    });
+                } else {
+                    // Create new box
+                    await fetch('/api/boxes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(boxData)
+                    });
+                }
+
+                closeModal();
+                loadBoxes();
+            } catch (error) {
+                alert('Error saving box');
+            }
+        }
+
+        // Delete box
+        async function deleteBox(id, event) {
+            event.stopPropagation();
+
+            if (!confirm('Delete this box?')) return;
+
+            try {
+                await fetch(`/api/boxes/${id}`, { method: 'DELETE' });
+                loadBoxes();
+            } catch (error) {
+                alert('Error deleting box');
+            }
+        }
+
+        // Check auth status on load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth-status');
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-screen').style.display = 'block';
+                    loadBoxes();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
