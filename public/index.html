@@ -471,6 +471,26 @@
             border: 2px solid rgba(255,255,255,0.2);
         }
 
+        .btn-delete {
+            background: rgba(231,76,60,0.2);
+            color: #e74c3c;
+            border: 2px solid #e74c3c;
+            flex: 0 0 auto;
+            min-width: 60px;
+        }
+
+        .btn-delete:active {
+            background: rgba(231,76,60,0.3);
+        }
+
+        #delete-box-btn {
+            display: none;
+        }
+
+        #delete-box-btn.show {
+            display: block;
+        }
+
         .help-text {
             font-size: 0.8em;
             color: #888;
@@ -665,6 +685,7 @@
             </div>
 
             <div class="modal-buttons">
+                <button id="delete-box-btn" class="btn-delete" onclick="deleteBoxFromModal()">Delete</button>
                 <button class="btn-secondary" onclick="closeModal()">Cancel</button>
                 <button class="btn-primary" onclick="saveBox()">Save</button>
             </div>
@@ -818,7 +839,6 @@
                         <h3>${box.heading}</h3>
                         <div class="box-controls">
                             <button class="box-btn" onclick="event.stopPropagation(); editBox(${box.id})">✏️</button>
-                            <button class="box-btn" onclick="event.stopPropagation(); deleteBox(${box.id})">×</button>
                         </div>
                     </div>
                     <ul>
@@ -927,6 +947,8 @@
             document.getElementById('temperature-slider').value = 50;
             updateTemperatureLabel();
             removePhoto();
+            // Hide delete button for new boxes
+            document.getElementById('delete-box-btn').classList.remove('show');
             document.getElementById('box-modal').classList.add('active');
         }
 
@@ -952,6 +974,9 @@
             } else {
                 removePhoto();
             }
+
+            // Show delete button for existing boxes
+            document.getElementById('delete-box-btn').classList.add('show');
 
             document.getElementById('box-modal').classList.add('active');
         }
@@ -1008,11 +1033,14 @@
             }
         }
 
-        async function deleteBox(id) {
-            if (!confirm('Delete this box?')) return;
+        async function deleteBoxFromModal() {
+            if (!currentEditingId) return;
+
+            if (!confirm('Delete this box? This cannot be undone.')) return;
 
             try {
-                await fetch(`/api/boxes/${id}`, { method: 'DELETE' });
+                await fetch(`/api/boxes/${currentEditingId}`, { method: 'DELETE' });
+                closeModal();
                 loadBoxes();
             } catch (error) {
                 alert('Error deleting box');
