@@ -129,7 +129,7 @@
             flex-direction: column;
             min-height: 150px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s ease;
             cursor: move;
             user-select: none;
             background-size: cover;
@@ -138,8 +138,9 @@
         }
 
         .stress-box.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
+            opacity: 0.3;
+            transform: scale(0.9);
+            filter: blur(2px);
         }
 
         .stress-box.drag-over {
@@ -706,6 +707,8 @@
         let touchDraggedElement = null;
         let touchStartTime = 0;
         let isDragging = false;
+        let originalBoxOrder = null;
+        let lastDragOverId = null;
 
         // Temperature to color conversion
         function tempToColor(temp) {
@@ -882,30 +885,37 @@
                 dragHandle.ondragstart = (e) => {
                     e.stopPropagation();
                     draggedBoxId = box.id;
+                    originalBoxOrder = JSON.parse(JSON.stringify(boxes)); // Deep copy
+                    lastDragOverId = null;
                     boxEl.classList.add('dragging');
                     e.dataTransfer.effectAllowed = 'move';
                 };
 
                 dragHandle.ondragend = (e) => {
-                    boxEl.classList.remove('dragging');
+                    // If drag was cancelled (not dropped), restore original order
+                    if (e.dataTransfer.dropEffect === 'none' && originalBoxOrder) {
+                        boxes = originalBoxOrder;
+                        renderBoxes();
+                    }
+                    draggedBoxId = null;
+                    originalBoxOrder = null;
+                    lastDragOverId = null;
                     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
                 };
 
                 boxEl.ondragover = (e) => {
                     e.preventDefault();
                     if (draggedBoxId && draggedBoxId !== box.id) {
-                        e.target.closest('.stress-box')?.classList.add('drag-over');
+                        liveReorderPreview(draggedBoxId, box.id);
                     }
                 };
 
                 boxEl.ondragleave = (e) => {
-                    e.target.closest('.stress-box')?.classList.remove('drag-over');
+                    // Remove visual highlight only, keep position
                 };
 
                 boxEl.ondrop = (e) => {
                     e.preventDefault();
-                    e.target.closest('.stress-box')?.classList.remove('drag-over');
-
                     if (draggedBoxId && draggedBoxId !== box.id) {
                         reorderBoxes(draggedBoxId, box.id);
                     }
@@ -920,6 +930,8 @@
                     isDragging = true;
                     touchDraggedElement.classList.add('dragging');
                     draggedBoxId = box.id;
+                    originalBoxOrder = JSON.parse(JSON.stringify(boxes)); // Deep copy
+                    lastDragOverId = null;
                 };
 
                 dragHandle.ontouchmove = (e) => {
@@ -933,12 +945,10 @@
                     const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
                     const boxBelow = elementBelow?.closest('.stress-box');
 
-                    // Clear previous highlights
-                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-
-                    // Highlight drop target
+                    // Live reorder preview
                     if (boxBelow && boxBelow !== touchDraggedElement) {
-                        boxBelow.classList.add('drag-over');
+                        const targetId = parseInt(boxBelow.dataset.boxId);
+                        liveReorderPreview(draggedBoxId, targetId);
                     }
                 };
 
@@ -953,14 +963,17 @@
                         if (boxBelow && boxBelow !== touchDraggedElement) {
                             const targetId = parseInt(boxBelow.dataset.boxId);
                             reorderBoxes(draggedBoxId, targetId);
+                        } else if (originalBoxOrder) {
+                            // Drag cancelled, restore original order
+                            boxes = originalBoxOrder;
+                            renderBoxes();
                         }
-
-                        touchDraggedElement.classList.remove('dragging');
-                        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
                         touchDraggedElement = null;
                         isDragging = false;
                         draggedBoxId = null;
+                        originalBoxOrder = null;
+                        lastDragOverId = null;
                     }
                 };
 
@@ -977,7 +990,26 @@
             });
         }
 
-        // Reorder boxes
+        // Live reorder preview (no server save)
+        function liveReorderPreview(draggedId, targetId) {
+            if (!draggedId || !targetId || draggedId === targetId) return;
+            if (lastDragOverId === targetId) return; // Already in this position
+
+            lastDragOverId = targetId;
+
+            const draggedIndex = boxes.findIndex(b => b.id === draggedId);
+            const targetIndex = boxes.findIndex(b => b.id === targetId);
+
+            if (draggedIndex === -1 || targetIndex === -1) return;
+
+            // Temporarily reorder
+            const [draggedBox] = boxes.splice(draggedIndex, 1);
+            boxes.splice(targetIndex, 0, draggedBox);
+
+            renderBoxes();
+        }
+
+        // Reorder boxes (final save)
         async function reorderBoxes(draggedId, targetId) {
             const draggedIndex = boxes.findIndex(b => b.id === draggedId);
             const targetIndex = boxes.findIndex(b => b.id === targetId);
@@ -998,6 +1030,10 @@
             } catch (error) {
                 console.error('Error saving order:', error);
             }
+
+            // Clear drag state
+            originalBoxOrder = null;
+            lastDragOverId = null;
 
             renderBoxes();
         }
