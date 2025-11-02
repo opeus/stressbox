@@ -834,19 +834,21 @@
                 const hasImage = box.backgroundImage && box.backgroundImage.length > 0;
                 boxEl.className = `stress-box col-${cols} row-${rows} ${hasImage ? '' : 'no-image'}`;
 
+                // Clear any previous styles
+                boxEl.style.backgroundImage = '';
+                boxEl.style.backgroundColor = '';
+                boxEl.style.border = '';
+
                 if (hasImage) {
                     boxEl.style.backgroundImage = `url(${box.backgroundImage})`;
+                    boxEl.style.border = `4px solid ${tempToColor(box.temperature)}`;
                 } else {
                     boxEl.style.backgroundColor = tempToColor(box.temperature);
+                    boxEl.style.border = '2px solid rgba(0,0,0,0.1)';
                 }
 
                 boxEl.dataset.boxId = box.id;
                 boxEl.draggable = false; // Only drag handle is draggable
-
-                // Add colored border for photo boxes
-                if (hasImage) {
-                    boxEl.style.border = `4px solid ${tempToColor(box.temperature)}`;
-                }
 
                 boxEl.innerHTML = `
                     <div class="stress-box-header">
