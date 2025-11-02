@@ -180,6 +180,18 @@ app.delete('/api/boxes/:id', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Reorder boxes
+app.post('/api/boxes/reorder', requireAuth, (req, res) => {
+  const { boxes } = req.body;
+  if (boxes && Array.isArray(boxes)) {
+    stressBoxes = boxes;
+    saveData();
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ error: 'Invalid boxes data' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Stress Box app running on port ${PORT}`);
 });

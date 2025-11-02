@@ -130,11 +130,21 @@
             min-height: 150px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
+            cursor: move;
             user-select: none;
             background-size: cover;
             background-position: center;
             border: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .stress-box.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .stress-box.drag-over {
+            border: 2px solid rgba(102,126,234,0.8);
+            box-shadow: 0 0 20px rgba(102,126,234,0.5);
         }
 
         .stress-box::before {
@@ -668,6 +678,7 @@
         let resizingBox = null;
         let startX, startY, startCols, startRows;
         let currentBackgroundImage = null;
+        let draggedBoxId = null;
 
         // Temperature to color conversion
         function tempToColor(temp) {
@@ -803,6 +814,7 @@
                 }
 
                 boxEl.dataset.boxId = box.id;
+                boxEl.draggable = true;
 
                 boxEl.innerHTML = `
                     <div class="stress-box-header">
@@ -817,6 +829,42 @@
                     <div class="resize-handle" onmousedown="startResize(event, ${box.id})" ontouchstart="startResize(event, ${box.id})">⋰</div>
                 `;
 
+                // Drag events
+                boxEl.ondragstart = (e) => {
+                    if (e.target.closest('.resize-handle')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    draggedBoxId = box.id;
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                };
+
+                boxEl.ondragend = (e) => {
+                    e.target.classList.remove('dragging');
+                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                };
+
+                boxEl.ondragover = (e) => {
+                    e.preventDefault();
+                    if (draggedBoxId && draggedBoxId !== box.id) {
+                        e.target.closest('.stress-box')?.classList.add('drag-over');
+                    }
+                };
+
+                boxEl.ondragleave = (e) => {
+                    e.target.closest('.stress-box')?.classList.remove('drag-over');
+                };
+
+                boxEl.ondrop = (e) => {
+                    e.preventDefault();
+                    e.target.closest('.stress-box')?.classList.remove('drag-over');
+
+                    if (draggedBoxId && draggedBoxId !== box.id) {
+                        reorderBoxes(draggedBoxId, box.id);
+                    }
+                };
+
                 boxEl.onclick = (e) => {
                     if (!e.target.closest('.resize-handle')) {
                         editBox(box.id);
@@ -825,6 +873,31 @@
 
                 container.appendChild(boxEl);
             });
+        }
+
+        // Reorder boxes
+        async function reorderBoxes(draggedId, targetId) {
+            const draggedIndex = boxes.findIndex(b => b.id === draggedId);
+            const targetIndex = boxes.findIndex(b => b.id === targetId);
+
+            if (draggedIndex === -1 || targetIndex === -1) return;
+
+            // Remove dragged box and insert at target position
+            const [draggedBox] = boxes.splice(draggedIndex, 1);
+            boxes.splice(targetIndex, 0, draggedBox);
+
+            // Save new order to server
+            try {
+                await fetch('/api/boxes/reorder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ boxes: boxes })
+                });
+            } catch (error) {
+                console.error('Error saving order:', error);
+            }
+
+            renderBoxes();
         }
 
         // Resize functionality
