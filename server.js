@@ -7,7 +7,17 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data.json');
+
+// Use persistent data directory for Railway volumes
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  console.log('Created data directory:', DATA_DIR);
+}
 
 // Default initial data
 const defaultBoxes = [
@@ -85,7 +95,7 @@ app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for base64 image
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(session({
   store: new FileStore({
-    path: path.join(__dirname, 'sessions'),
+    path: SESSIONS_DIR,
     retries: 0,
     ttl: 86400 // 24 hours in seconds
   }),
