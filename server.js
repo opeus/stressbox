@@ -202,6 +202,29 @@ app.post('/api/boxes/reorder', requireAuth, (req, res) => {
   }
 });
 
+// Import boxes (replace all)
+app.post('/api/boxes/import', requireAuth, (req, res) => {
+  const { boxes } = req.body;
+
+  // Validate data
+  if (!boxes || !Array.isArray(boxes)) {
+    return res.status(400).json({ error: 'Invalid import data: must be an array' });
+  }
+
+  // Validate each box
+  for (const box of boxes) {
+    if (!box.heading || !Array.isArray(box.items) || typeof box.temperature !== 'number') {
+      return res.status(400).json({ error: 'Invalid box data in import' });
+    }
+  }
+
+  // Replace all boxes with imported data
+  stressBoxes = boxes;
+  saveData();
+  console.log(`Imported ${boxes.length} boxes`);
+  res.json({ success: true, count: boxes.length });
+});
+
 app.listen(PORT, () => {
   console.log(`Stress Box app running on port ${PORT}`);
 });

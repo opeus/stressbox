@@ -310,6 +310,15 @@
             box-shadow: 0 4px 15px rgba(102,126,234,0.4);
         }
 
+        .menu-btn {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.3);
+            flex: 0 0 auto;
+            min-width: 60px;
+            font-size: 18px;
+        }
+
         .logout-btn {
             background: rgba(231,76,60,0.2);
             color: #e74c3c;
@@ -502,6 +511,24 @@
             margin-top: 5px;
         }
 
+        /* Menu Section */
+        .menu-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+
+        .menu-section h3 {
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .menu-section p {
+            margin-bottom: 15px;
+        }
+
         /* Photo Upload */
         .photo-upload-container {
             margin-bottom: 20px;
@@ -647,6 +674,7 @@
 
         <div id="bottom-nav">
             <button class="add-btn" onclick="showAddBoxModal()">+ Add Box</button>
+            <button class="menu-btn" onclick="showMenuModal()">⚙️</button>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
@@ -693,6 +721,31 @@
                 <button id="delete-box-btn" class="btn-delete" onclick="deleteBoxFromModal()">Delete</button>
                 <button class="btn-secondary" onclick="closeModal()">Cancel</button>
                 <button class="btn-primary" onclick="saveBox()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Modal -->
+    <div id="menu-modal" class="modal" onclick="handleMenuModalClick(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>Settings</h2>
+
+            <div class="menu-section">
+                <h3>Backup & Restore</h3>
+                <p class="help-text">Export your data to backup all boxes, or import from a previous backup</p>
+
+                <button class="btn-primary" onclick="exportData()" style="width: 100%; margin-bottom: 10px;">
+                    📥 Export Backup
+                </button>
+
+                <input type="file" id="import-input" accept=".json" style="display: none;" onchange="handleImport(event)" />
+                <button class="btn-secondary" onclick="document.getElementById('import-input').click()" style="width: 100%;">
+                    📤 Import Backup
+                </button>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeMenuModal()">Close</button>
             </div>
         </div>
     </div>
@@ -1218,6 +1271,99 @@
                 loadBoxes();
             } catch (error) {
                 alert('Error deleting box');
+            }
+        }
+
+        // Menu Modal functions
+        function showMenuModal() {
+            document.getElementById('menu-modal').classList.add('active');
+        }
+
+        function closeMenuModal() {
+            document.getElementById('menu-modal').classList.remove('active');
+        }
+
+        function handleMenuModalClick(event) {
+            if (event.target.id === 'menu-modal') {
+                closeMenuModal();
+            }
+        }
+
+        // Export/Import functions
+        function exportData() {
+            // Create a blob with the boxes data
+            const dataStr = JSON.stringify(boxes, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+            // Create download link
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            link.download = `stressbox-backup-${timestamp}.json`;
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // Show feedback
+            alert('✅ Backup exported successfully!');
+        }
+
+        async function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Reset file input
+            event.target.value = '';
+
+            if (!file.name.endsWith('.json')) {
+                alert('❌ Please select a valid JSON backup file');
+                return;
+            }
+
+            if (!confirm('⚠️ Import will replace ALL current boxes with the backup data. Continue?')) {
+                return;
+            }
+
+            try {
+                const text = await file.text();
+                const importedBoxes = JSON.parse(text);
+
+                // Validate the data structure
+                if (!Array.isArray(importedBoxes)) {
+                    throw new Error('Invalid backup format');
+                }
+
+                // Validate each box has required fields
+                for (const box of importedBoxes) {
+                    if (!box.heading || !Array.isArray(box.items) || typeof box.temperature !== 'number') {
+                        throw new Error('Invalid box data in backup');
+                    }
+                }
+
+                // Send to server to replace all boxes
+                const response = await fetch('/api/boxes/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ boxes: importedBoxes })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server error during import');
+                }
+
+                // Reload boxes from server
+                await loadBoxes();
+                closeMenuModal();
+                alert('✅ Backup imported successfully!');
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('❌ Import failed: ' + error.message);
             }
         }
 
